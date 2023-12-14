@@ -2,9 +2,8 @@ package com.gui.mscreditappraiser.application;
 
 import com.gui.mscreditappraiser.application.ex.CommunicationMsException;
 import com.gui.mscreditappraiser.application.ex.CustomerDataNotFoundException;
-import com.gui.mscreditappraiser.domain.model.AssessmentData;
-import com.gui.mscreditappraiser.domain.model.CustomerSituation;
-import com.gui.mscreditappraiser.domain.model.ReturnAssessmentCustomer;
+import com.gui.mscreditappraiser.application.ex.RequestCardExceptionError;
+import com.gui.mscreditappraiser.domain.model.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -49,8 +48,17 @@ public class CreditAppraiserController {
         } catch (CommunicationMsException e) {
             return ResponseEntity.status(HttpStatus.resolve(e.getStatus())).body(e.getMessage());
         }
+    }
 
 
+    @PostMapping("request-cards")
+    public ResponseEntity requestCard(@RequestBody IssuanceRequestCardData data){
+        try{
+            ProtocoloIssuanceCard requestCard = creditAppraiserService.requestIssuanceCard(data);
+            return ResponseEntity.ok(requestCard);
+        }catch (RequestCardExceptionError e){
+            return ResponseEntity.internalServerError().body(e.getMessage());
+        }
     }
 
 }

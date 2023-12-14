@@ -1,10 +1,13 @@
 package com.gui.mscreditappraiser.application;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.gui.mscreditappraiser.application.ex.CommunicationMsException;
 import com.gui.mscreditappraiser.application.ex.CustomerDataNotFoundException;
+import com.gui.mscreditappraiser.application.ex.RequestCardExceptionError;
 import com.gui.mscreditappraiser.domain.model.*;
 import com.gui.mscreditappraiser.infra.clients.CardsResourceClient;
 import com.gui.mscreditappraiser.infra.clients.CustomerResourceClient;
+import com.gui.mscreditappraiser.infra.mqueue.CardIssuanceRequestPublisher;
 import feign.FeignException;
 import lombok.RequiredArgsConstructor;
 import org.apache.catalina.connector.Response;
@@ -14,6 +17,7 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 @Service
@@ -22,6 +26,7 @@ public class CreditAppraiserService {
 
     private final CustomerResourceClient customerClient;
     private final CardsResourceClient cardClient;
+    private final CardIssuanceRequestPublisher requestPublisher;
 
 
     public CustomerSituation obtainCustomerSituation(String customerId) throws
@@ -66,7 +71,7 @@ public class CreditAppraiserService {
 
                 ApprovedCard approved = new ApprovedCard();
                 approved.setCard(card.getName());
-                approved.setFlag(card.getFlg());
+                approved.setFlag(card.getFlag());
                 approved.setApprovedLimit(approvedLimit);
 
                 return approved;
@@ -83,6 +88,17 @@ public class CreditAppraiserService {
             throw new CommunicationMsException(e.getMessage(), status);
         }
 
+    }
+
+
+    public ProtocoloIssuanceCard requestIssuanceCard(IssuanceRequestCardData data){
+        try {
+            requestPublisher.requestCard(data);
+            var protocolo = UUID.randomUUID().toString();
+            return new ProtocoloIssuanceCard(protocolo);
+        }catch (Exception e){
+            throw new RequestCardExceptionError(e.getMessage());
+        }
     }
 
 }
